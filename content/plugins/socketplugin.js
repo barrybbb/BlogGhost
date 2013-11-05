@@ -11,9 +11,9 @@ var express = require('express')
 // 'myroom' handler.
 function showRoom(req, res, next) {
     if (req.session.user) {
-        res.render('teacherRoom');
+        res.render('teacher');
     }else{
-		res.render('studentRoom');
+		res.render('student');
 	}
 
     next();
@@ -34,7 +34,7 @@ GhostPlugin.prototype.activate = function (ghost) {
 	//server.use(cookie);
 	//server.use(session);
 
-    //server.get('/myroom/roomId/', showRoom);
+    server.get('/myroom/roomId/', showRoom);
 	io = require('socket.io').listen(httpserver);
 	io.set('authorization', function(data, accept) {
 		cookie(data, {}, function(err) {
