@@ -457,7 +457,7 @@ when(ghost.init()).then(function () {
     ghost.server = server;
 
     // Initialize plugins then start the server
-    ghost.initPlugins().then(function () {
+    ghost.initPlugins(new Array("socketplugin")).then(function () {
 
         // ## Start Ghost App
         if (getSocket()) {

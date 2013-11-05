@@ -43,7 +43,6 @@ projectFilesBackup
 /_site
 /content/data/*
 /content/plugins/**/*
-/content/plugins/*
 /content/themes/*
 /content/themes/**/*
 /content/images/**/*
