@@ -113,7 +113,7 @@ function ghostLocals(req, res, next) {
     res.locals = res.locals || {};
     res.locals.version = packageInfo.version;
     res.locals.path = req.path;
-    res.locals.csrfToken = req.csrfToken();
+    //res.locals.csrfToken = req.csrfToken();
 
     if (res.isAdmin) {
         api.users.read({id: req.session.user}).then(function (currentUser) {
@@ -189,6 +189,7 @@ function initViews(req, res, next) {
 
     next();
 }
+
 
 // ### Activate Theme
 // Helper for manageAdminAndTheme
@@ -279,7 +280,7 @@ when(ghost.init()).then(function () {
 
     // Theme only config
     server.use(whenEnabled(server.get('activeTheme'), middleware.staticTheme(ghost)));
-
+	server.use(express.bodyParser());
     // Add in all trailing slashes
     server.use(slashes());
 
@@ -293,7 +294,7 @@ when(ghost.init()).then(function () {
 
 
     //enable express csrf protection
-    server.use(express.csrf());
+    //server.use(express.csrf());
     // local data
     server.use(ghostLocals);
     // So on every request we actually clean out reduntant passive notifications from the server side

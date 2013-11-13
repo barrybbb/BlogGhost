@@ -1,11 +1,9 @@
 // # Socket Plugin Module
 
 // Module dependencies
-
-var express = require('express')
-  , socketplugin = require('../../core/server/plugins/GhostPlugin')
-  , store = new express.session.MemoryStore()
-  , cookie, session, io, GhostPlugin;
+var PeerServer = require('./server').PeerServer;
+var socketplugin = require('../../core/server/plugins/GhostPlugin'),
+	peerServer;
 
 // ### Show Room
 // 'myroom' handler.
@@ -13,7 +11,7 @@ function showRoom(req, res, next) {
     if (req.session.user) {
         res.render('teacher');
     }else{
-		res.render('student');
+		res.render('room');
 	}
 
     next();
@@ -26,13 +24,17 @@ GhostPlugin = function (ghost) {
 
 GhostPlugin.prototype.activate = function (ghost) {
 
-	var server = ghost.server;
+
+	//ghost.server.use(express.bodyParser());
+	peerServer = new PeerServer({ app: ghost.server});
+	ghost.server.get('/myroom/roomId/', showRoom);
+/*	var server = ghost.server;
 	var httpserver = require('http').createServer(server);
 	//cookie = express.cookieParser(ghost.dbHash);
-	//session = express.cookieSession({store: store});
+	session = express.cookieSession({store: store});
 
 	//server.use(cookie);
-	//server.use(session);
+	server.use(session);
 
     server.get('/myroom/roomId/', showRoom);
 	io = require('socket.io').listen(httpserver);
@@ -54,15 +56,27 @@ GhostPlugin.prototype.activate = function (ghost) {
 		});
 	});
 
-	io.sockets.on('connection', function (client) {
+	io.sockets.on('connection', function (socket) {
 		var session = client.handshake.session
 		, nome = session.nome;
-		client.on('toServer', function (msg) {
-			msg = "<b>"+nome+":</b> "+msg+"<br>";
-			client.emit('toClient', msg);
-			client.broadcast.emit('toClient', msg);
+		if (!io.connected) io.connected = true;
+		socket.on('new-channel', function (data) {
+			//onNewNamespace(data.channel, data.sender);
+			io.of('/' + data.channel).on('connection', function (socket) {
+				if (io.isConnected) {
+					io.isConnected = false;
+					socket.emit('connect', true);
+				}
+
+				socket.on('message', function (msg) {
+					if (msg.sender == data.sender) socket.broadcast.emit('message', msg.data);
+				});
+			});
 		});
 	});
+	*/
+
+
 	return;
 };
 
@@ -93,7 +107,6 @@ GhostPlugin.prototype.install = function (ghost) {
 GhostPlugin.prototype.deactivate = function (ghost) {
     return;
 };
-
 module.exports = GhostPlugin;
 
 
