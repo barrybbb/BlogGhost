@@ -2,7 +2,7 @@ var util = require('./util');
 //var restify = require('restify');
 var http = require('http');
 var EventEmitter = require('events').EventEmitter;
-var WebSocketServer = require('ws').Server;
+//var WebSocketServer = require('ws').Server;
 var url = require('url');
 var express = require('express');
 //var server = express();
@@ -59,43 +59,42 @@ PeerServer.prototype._initializeWSS = function() {
   var self = this;
 
   // Create WebSocket server as well.
-  this._wss = new WebSocketServer({ path: '/peerjs', server: this._app});
+  //this._wss = new WebSocketServer({ path: '/peerjs', server: this._app});
+	this._wss = this._options.socket;
+	this._wss.of('/'+this._options.key).on('connection', function(socket) {
 
-  this._wss.on('connection', function(socket) {
-    var query = url.parse(socket.upgradeReq.url, true).query;
-    var id = query.id;
-    var token = query.token;
-    var key = query.key;
-    var ip = socket.upgradeReq.socket.remoteAddress;
-  console.log(
-                "connection Resques"
-            );
-    if (!id || !token || !key) {
-      socket.send(JSON.stringify({ type: 'ERROR', payload: { msg: 'No id, token, or key supplied to websocket server' } }));
-      socket.close();
-      return;
-    }
-
-    if (!self._clients[key] || !self._clients[key][id]) {
-      self._checkKey(key, ip, function(err) {
-        if (!err) {
-          if (!self._clients[key][id]) {
-            self._clients[key][id] = { token: token, ip: ip };
-            self._ips[ip]++;
-            socket.send(JSON.stringify({ type: 'OPEN' }));
-          }
-          self._configureWS(socket, key, id, token);
-        } else {
-          socket.send(JSON.stringify({ type: 'ERROR', payload: { msg: err } }));
-        }
-      });
-    } else {
-      self._configureWS(socket, key, id, token);
-    }
+		util.log("Socket Connetction");
+		var query = url.parse(socket.handshake.url, true).query;
+		var id = query.id;
+		var token = query.token;
+		var key = query.key;
+		var ip = socket.handshake.address.address;
+		if (!id || !token || !key) {
+		  socket.send(JSON.stringify({ type: 'ERROR', payload: { msg: 'No id, token, or key supplied to websocket server' } }));
+		  //socket.close();
+		  return;
+		}
+		if (!self._clients[key] || !self._clients[key][id]) {
+		  self._checkKey(key, ip, function(err) {
+			if (!err) {
+			  if (!self._clients[key][id]) {
+				self._clients[key][id] = { token: token, ip: ip };
+				self._ips[ip]++;
+				socket.emit('data',JSON.stringify({ type: 'OPEN' }));
+			  }
+			  self._configureWS(socket, key, id, token);
+			} else {
+			  socket.emit('data',JSON.stringify({ type: 'ERROR', payload: { msg: err } }));
+			}
+		  });
+		} else {
+		  self._configureWS(socket, key, id, token);
+		}
   });
 };
 
 PeerServer.prototype._configureWS = function(socket, key, id, token) {
+  util.log("Configue WS");
   var self = this;
   var client = this._clients[key][id];
 
@@ -108,7 +107,7 @@ PeerServer.prototype._configureWS = function(socket, key, id, token) {
     }
   } else {
     // ID-taken, invalid token
-    socket.send(JSON.stringify({ type: 'ID-TAKEN', payload: { msg: 'ID is taken' } }));
+    socket.emit('data',JSON.stringify({ type: 'ID-TAKEN', payload: { msg: 'ID is taken' } }));
     socket.close();
     return;
   }
@@ -193,9 +192,6 @@ PeerServer.prototype._initializeHTTP = function() {
     var token = req.params.token;
     var key = req.params.key;
     var ip = req.connection.remoteAddress;
-  console.log(
-                "post Resques"
-            );
     if (!self._clients[key] || !self._clients[key][id]) {
       self._checkKey(key, ip, function(err) {
         if (!err && !self._clients[key][id]) {
@@ -368,8 +364,10 @@ PeerServer.prototype._handleTransmission = function(key, message) {
     try {
       util.log(type, 'from', src, 'to', dst);
       if (destination.socket) {
-        destination.socket.send(data);
+		util.log("Transmission Using Socket");
+        destination.socket.emit('data',data);
       } else if (destination.res) {
+		console.log("XHR");
         data += '\n';
         destination.res.write(data);
       } else {

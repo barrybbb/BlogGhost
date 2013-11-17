@@ -1,10 +1,16 @@
 // # Socket Plugin Module
 
 // Module dependencies
-var PeerServer = require('./server').PeerServer;
-var socketplugin = require('../../core/server/plugins/GhostPlugin'),
-	peerServer;
-
+var PeerServer = require('./server').PeerServer,
+	//socket = require('socket.io'),
+	//http = require('http'),
+    socketplugin = require('../../core/server/plugins/GhostPlugin'),
+	peerServer, ghostServer, httpserver;
+/*
+var app = require('express')()
+  , server = require('http').createServer(app)
+  , io = require('socket.io').listen(server);
+  */
 // ### Show Room
 // 'myroom' handler.
 function showRoom(req, res, next) {
@@ -26,10 +32,15 @@ GhostPlugin.prototype.activate = function (ghost) {
 
 
 	//ghost.server.use(express.bodyParser());
-	peerServer = new PeerServer({ app: ghost.server});
-	ghost.server.get('/myroom/roomId/', showRoom);
+    ghostServer = ghost.server;
+	//server.listen(8888);
+	httpserver = require('http').createServer(ghostServer);
+	io = require('socket.io').listen(httpserver);
+	httpserver.listen(ghost.config().server.port);
+	peerServer = new PeerServer({ app: ghostServer, socket: io, debug: true});
+	ghostServer.get('/myroom/roomId/', showRoom);
 /*	var server = ghost.server;
-	var httpserver = require('http').createServer(server);
+	var z = require('http').createServer(server);
 	//cookie = express.cookieParser(ghost.dbHash);
 	session = express.cookieSession({store: store});
 

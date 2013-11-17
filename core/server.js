@@ -473,11 +473,13 @@ when(ghost.init()).then(function () {
             });
 
         } else {
+			startGhost();
+			/*
             server.listen(
                 ghost.config().server.port,
                 ghost.config().server.host,
                 startGhost
-            );
+            );*/
         }
 
     });
