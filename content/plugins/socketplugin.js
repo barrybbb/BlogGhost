@@ -2,10 +2,14 @@
 
 // Module dependencies
 var PeerServer = require('./server').PeerServer,
+	connect = require('connect'),
+	SessionSockets = require('session.socket.io'),
+	sessionStore = new connect.middleware.session.MemoryStore(),
+	express = require('express'),
 	//socket = require('socket.io'),
 	//http = require('http'),
     socketplugin = require('../../core/server/plugins/GhostPlugin'),
-	peerServer, ghostServer, httpserver;
+	peerServer, ghostServer, httpserver, cookieParser, sessionSockets;
 /*
 var app = require('express')()
   , server = require('http').createServer(app)
@@ -15,7 +19,7 @@ var app = require('express')()
 // 'myroom' handler.
 function showRoom(req, res, next) {
     if (req.session.user) {
-        res.render('teacher');
+        res.render('room');
     }else{
 		res.render('room');
 	}
@@ -30,64 +34,20 @@ GhostPlugin = function (ghost) {
 
 GhostPlugin.prototype.activate = function (ghost) {
 
-
-	//ghost.server.use(express.bodyParser());
-    ghostServer = ghost.server;
-	//server.listen(8888);
+	ghostServer = ghost.server;
+	//ghostServer.use(express.session({store: sessionStore}));
+	
 	httpserver = require('http').createServer(ghostServer);
 	io = require('socket.io').listen(httpserver);
 	httpserver.listen(ghost.config().server.port);
-	peerServer = new PeerServer({ app: ghostServer, socket: io, debug: true});
+	
+	//cookieParser = express.cookieParser(ghost.dbHash);
+	sessionSockets = new SessionSockets(io, ghost.sessionStore, ghost.cookieParser);
+
+	peerServer = new PeerServer({ app: ghostServer, socket: sessionSockets, debug: true});
+	
 	ghostServer.get('/myroom/roomId/', showRoom);
-/*	var server = ghost.server;
-	var z = require('http').createServer(server);
-	//cookie = express.cookieParser(ghost.dbHash);
-	session = express.cookieSession({store: store});
-
-	//server.use(cookie);
-	server.use(session);
-
-    server.get('/myroom/roomId/', showRoom);
-	io = require('socket.io').listen(httpserver);
-	io.set('authorization', function(data, accept) {
-		cookie(data, {}, function(err) {
-			if (!err) {
-				var sessionID = data.signedCookies[KEY];
-				store.get(sessionID, function(err, session) {
-					if (err || !session) {
-						accept(null, false);
-					} else {
-						data.session = session;
-						accept(null, true);
-					}
-				});
-			} else {
-				accept(null, false);
-			}
-		});
-	});
-
-	io.sockets.on('connection', function (socket) {
-		var session = client.handshake.session
-		, nome = session.nome;
-		if (!io.connected) io.connected = true;
-		socket.on('new-channel', function (data) {
-			//onNewNamespace(data.channel, data.sender);
-			io.of('/' + data.channel).on('connection', function (socket) {
-				if (io.isConnected) {
-					io.isConnected = false;
-					socket.emit('connect', true);
-				}
-
-				socket.on('message', function (msg) {
-					if (msg.sender == data.sender) socket.broadcast.emit('message', msg.data);
-				});
-			});
-		});
-	});
-	*/
-
-
+	
 	return;
 };
 

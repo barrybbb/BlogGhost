@@ -289,8 +289,10 @@ when(ghost.init()).then(function () {
     server.use('/ghost/upload/', express.multipart());
     server.use('/ghost/upload/', express.multipart({uploadDir: __dirname + '/content/images'}));
     server.use('/ghost/api/v0.1/db/', express.multipart());
-    server.use(express.cookieParser(ghost.dbHash));
-    server.use(express.cookieSession({ cookie : { maxAge: 12 * 60 * 60 * 1000 }}));
+	ghost.cookieParser = express.cookieParser(ghost.dbHash);
+    server.use(ghost.cookieParser);
+    //server.use(express.cookieSession({ cookie : { maxAge: 12 * 60 * 60 * 1000 }}));
+	server.use(express.session({ cookie : { maxAge: 12 * 60 * 60 * 1000 },store: ghost.sessionStore}));
 
 
     //enable express csrf protection

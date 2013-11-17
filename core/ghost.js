@@ -13,6 +13,7 @@ var config      = require('../config'),
     _           = require('underscore'),
     Polyglot    = require('node-polyglot'),
     Mailer      = require('./server/mail'),
+	connect = require('connect'),
     models      = require('./server/models'),
     plugins     = require('./server/plugins'),
     requireTree = require('./server/require-tree'),
@@ -62,6 +63,8 @@ Ghost = function () {
 
         // Holds the theme directories temporarily
         instance.themeDirectories = {};
+		
+		instance.sessionStore = new connect.middleware.session.MemoryStore();
 
         // Holds the plugin directories temporarily
         instance.pluginDirectories = {};
@@ -74,6 +77,8 @@ Ghost = function () {
 
         // Holds the dbhash (mainly used for cookie secret)
         instance.dbHash = undefined;
+		
+		instance.cookieParser = undefined;
 
         polyglot = new Polyglot();
 

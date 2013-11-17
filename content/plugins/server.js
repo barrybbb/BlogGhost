@@ -61,9 +61,10 @@ PeerServer.prototype._initializeWSS = function() {
   // Create WebSocket server as well.
   //this._wss = new WebSocketServer({ path: '/peerjs', server: this._app});
 	this._wss = this._options.socket;
-	this._wss.of('/'+this._options.key).on('connection', function(socket) {
+	this._wss.of('/'+this._options.key).on('connection', function(err, socket, session) {
 
 		util.log("Socket Connetction");
+		util.log("Session: ",session);
 		var query = url.parse(socket.handshake.url, true).query;
 		var id = query.id;
 		var token = query.token;
@@ -105,6 +106,8 @@ PeerServer.prototype._configureWS = function(socket, key, id, token) {
     if (client.res) {
       client.res.end();
     }
+	//Broadcast to everybody.
+	socket.broadcast.emit('data',JSON.stringify({ type: 'NEW-USER', payload: { msg: id } }));
   } else {
     // ID-taken, invalid token
     socket.emit('data',JSON.stringify({ type: 'ID-TAKEN', payload: { msg: 'ID is taken' } }));
