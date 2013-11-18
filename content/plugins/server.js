@@ -69,8 +69,10 @@ PeerServer.prototype._initializeWSS = function() {
 		var id = query.id;
 		var token = query.token;
 		var key = query.key;
+		var nickname = query.nickname;
 		var ip = socket.handshake.address.address;
-		if (!id || !token || !key) {
+		util.log("Nickname: ",nickname);
+		if (!id || !token || !key || !nickname) {
 		  socket.send(JSON.stringify({ type: 'ERROR', payload: { msg: 'No id, token, or key supplied to websocket server' } }));
 		  //socket.close();
 		  return;
@@ -79,7 +81,7 @@ PeerServer.prototype._initializeWSS = function() {
 		  self._checkKey(key, ip, function(err) {
 			if (!err) {
 			  if (!self._clients[key][id]) {
-				self._clients[key][id] = { token: token, ip: ip };
+				self._clients[key][id] = { token: token, ip: ip, nickname: nickname};
 				self._ips[ip]++;
 				socket.emit('data',JSON.stringify({ type: 'OPEN' }));
 			  }
@@ -183,22 +185,24 @@ PeerServer.prototype._initializeHTTP = function() {
   this._app.use(util.allowCrossDomain);
   //this._app.use(express.csrf());
   // Retrieve guaranteed random ID.
-  this._app.get('/:key/id', function(req, res, next) {
+  this._app.get('/:key/:nickname/id', function(req, res, next) {
     res.contentType = 'text/html';
     res.send(self._generateClientId(req.params.key));
     //return next();
   });
 
   // Server sets up HTTP streaming when you get post an ID.
-  this._app.post('/:key/:id/:token/id', function(req, res, next) {
+  this._app.post('/:key/:nickname/:id/:token/id', function(req, res, next) {
+
     var id = req.params.id;
     var token = req.params.token;
     var key = req.params.key;
     var ip = req.connection.remoteAddress;
+	var nickname = req.params.nickname;
     if (!self._clients[key] || !self._clients[key][id]) {
       self._checkKey(key, ip, function(err) {
         if (!err && !self._clients[key][id]) {
-          self._clients[key][id] = { token: token, ip: ip };
+          self._clients[key][id] = { token: token, ip: ip, nickname: nickname};
           self._ips[ip]++;
           self._startStreaming(res, key, id, token, true);
         } else {
@@ -243,13 +247,13 @@ PeerServer.prototype._initializeHTTP = function() {
     //return next();
   };
 
-  this._app.post('/:key/:id/:token/offer', handle);
+  this._app.post('/:key/:nickname/:id/:token/offer', handle);
 
-  this._app.post('/:key/:id/:token/candidate', handle);
+  this._app.post('/:key/:nickname/:id/:token/candidate', handle);
 
-  this._app.post('/:key/:id/:token/answer', handle);
+  this._app.post('/:key/:nickname/:id/:token/answer', handle);
 
-  this._app.post('/:key/:id/:token/leave', handle);
+  this._app.post('/:key/:nickname/:id/:token/leave', handle);
 
   // Listen on user-specified port.
   //this._app.listen(this._options.port);

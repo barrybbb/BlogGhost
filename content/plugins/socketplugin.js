@@ -46,7 +46,7 @@ GhostPlugin.prototype.activate = function (ghost) {
 
 	peerServer = new PeerServer({ app: ghostServer, socket: sessionSockets, debug: true});
 	
-	ghostServer.get('/myroom/roomId/', showRoom);
+	ghostServer.get('/room/:nickname', showRoom);
 	
 	return;
 };
