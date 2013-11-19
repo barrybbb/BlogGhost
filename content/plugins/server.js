@@ -34,7 +34,9 @@ function PeerServer(options) {
 	this._app = this._options.app;
   // Connected clients
   this._clients = {};
-
+  // Teacher Socket.
+  this.room = "Demo";
+  
   // Messages waiting for another peer.
   this._outstanding = {};
 
@@ -85,18 +87,18 @@ PeerServer.prototype._initializeWSS = function() {
 				self._ips[ip]++;
 				socket.emit('data',JSON.stringify({ type: 'OPEN' }));
 			  }
-			  self._configureWS(socket, key, id, token);
+			  self._configureWS(socket, key, id, token, session);
 			} else {
 			  socket.emit('data',JSON.stringify({ type: 'ERROR', payload: { msg: err } }));
 			}
 		  });
 		} else {
-		  self._configureWS(socket, key, id, token);
+		  self._configureWS(socket, key, id, token, session);
 		}
   });
 };
 
-PeerServer.prototype._configureWS = function(socket, key, id, token) {
+PeerServer.prototype._configureWS = function(socket, key, id, token, session) {
   util.log("Configue WS");
   var self = this;
   var client = this._clients[key][id];
@@ -108,8 +110,12 @@ PeerServer.prototype._configureWS = function(socket, key, id, token) {
     if (client.res) {
       client.res.end();
     }
+	
+	socket.join(this.room);
 	//Broadcast to everybody.
-	socket.broadcast.emit('data',JSON.stringify({ type: 'NEW-USER', payload: { msg: id } }));
+	socket.broadcast.to(this.room).emit('data',JSON.stringify({ type: 'NEW-USER', payload: { id: id , nickname: client.nickname} }));
+	//Get other user;
+	_getOthers(client);
   } else {
     // ID-taken, invalid token
     socket.emit('data',JSON.stringify({ type: 'ID-TAKEN', payload: { msg: 'ID is taken' } }));
@@ -314,6 +320,22 @@ PeerServer.prototype._pruneOutstanding = function() {
       }
     }
     this._outstanding[key] = {};
+  }
+};
+
+PeerServer.prototype._getOthers = function(client) {
+  var keys = Object.keys(this._clients);
+  for (var k = 0, kk = keys.length; k < kk; k += 1) {
+    var key = keys[k];
+    var ids = Object.keys(this._clients[key]);
+    for (var i = 0, ii = ids.length; i < ii; i += 1) {
+      var oClient = this._clients[key][i];
+      if (oClient == client) {
+		continue;
+	  }else{
+		client.socket.emit('data',JSON.stringify({ type: 'NEW-USER', payload: { id:  oClient.id, nickname: oClient.nickname} }));
+	  }
+    }
   }
 };
 
