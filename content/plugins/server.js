@@ -115,7 +115,7 @@ PeerServer.prototype._configureWS = function(socket, key, id, token, session) {
 	//Broadcast to everybody.
 	socket.broadcast.to(this.room).emit('data',JSON.stringify({ type: 'NEW-USER', payload: { id: id , nickname: client.nickname} }));
 	//Get other user;
-	_getOthers(client);
+	self._getOthers(client);
   } else {
     // ID-taken, invalid token
     socket.emit('data',JSON.stringify({ type: 'ID-TAKEN', payload: { msg: 'ID is taken' } }));
@@ -126,7 +126,7 @@ PeerServer.prototype._configureWS = function(socket, key, id, token, session) {
   this._processOutstanding(key, id);
 
   // Cleanup after a socket closes.
-  socket.on('close', function() {
+  socket.on('disconnect', function() {
     util.log('Socket closed:', id);
     if (client.socket == socket) {
       self._removePeer(key, id);
@@ -329,11 +329,11 @@ PeerServer.prototype._getOthers = function(client) {
     var key = keys[k];
     var ids = Object.keys(this._clients[key]);
     for (var i = 0, ii = ids.length; i < ii; i += 1) {
-      var oClient = this._clients[key][i];
+      var oClient = this._clients[key][ids[i]];
       if (oClient == client) {
 		continue;
 	  }else{
-		client.socket.emit('data',JSON.stringify({ type: 'NEW-USER', payload: { id:  oClient.id, nickname: oClient.nickname} }));
+		client.socket.emit('data',JSON.stringify({ type: 'NEW-USER', payload: { id:  ids[i], nickname: oClient.nickname} }));
 	  }
     }
   }
